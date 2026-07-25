@@ -2,8 +2,6 @@
 
 > A full-stack web tool that audits any URL and returns a detailed report on SEO health, performance, and page structure.
 
-Built for the **Digital Heroes Training Task** | [digitalheroesco.com](https://digitalheroesco.com)
-
 ---
 
 ## ✨ Features

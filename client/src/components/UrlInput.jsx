@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 
 /**
- * UrlInput — URL input form with inline validation feedback.
+ * UrlInput — URL form with inline validation, glow ring, and loading spinner.
  *
  * Props:
- *   onSubmit(url: string) — called when the form is submitted with a valid URL
- *   isLoading: boolean    — disables the form while an audit is running
+ *   onSubmit(url: string) — called with a valid URL on form submit
+ *   isLoading: boolean    — disables controls while auditing
  */
 export default function UrlInput({ onSubmit, isLoading }) {
   const [value,   setValue]   = useState("");
   const [touched, setTouched] = useState(false);
+  const inputId = useId();
 
   const isValid = (() => {
     try {
@@ -28,74 +29,100 @@ export default function UrlInput({ onSubmit, isLoading }) {
     if (isValid && !isLoading) onSubmit(value.trim());
   };
 
+  const handleClear = () => {
+    setValue("");
+    setTouched(false);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="w-full" noValidate>
+    <form onSubmit={handleSubmit} noValidate aria-label="URL audit form">
       <div className="relative group">
-        {/* Glow ring on focus */}
-        <div
-          className={`absolute -inset-px rounded-2xl transition-opacity duration-300 pointer-events-none
-            bg-gradient-to-r from-brand-600/60 to-brand-400/60 opacity-0
-            group-focus-within:opacity-100`}
-        />
+        {/* Animated glow border on focus */}
+        <div className="absolute -inset-[1.5px] rounded-2xl pointer-events-none
+          bg-gradient-to-r from-brand-600 via-brand-400 to-brand-600
+          opacity-0 group-focus-within:opacity-100
+          transition-opacity duration-300 blur-[1px]" />
 
-        <div className="relative flex items-center glass-card overflow-hidden">
-          {/* URL icon */}
-          <span className="pl-5 pr-3 text-slate-500 text-lg shrink-0">🔗</span>
+        {/* Input card */}
+        <div className="relative flex items-center bg-surface-800/90 border
+          border-surface-500/70 rounded-2xl overflow-hidden
+          group-focus-within:border-transparent transition-colors duration-300">
 
-          {/* Input */}
+          {/* Globe icon */}
+          <label htmlFor={inputId} className="pl-5 pr-3 text-slate-500 shrink-0 cursor-text">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10
+                       15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </label>
+
+          {/* Text input */}
           <input
-            id="url-input"
+            id={inputId}
             type="url"
             value={value}
             onChange={(e) => { setValue(e.target.value); setTouched(false); }}
-            onBlur={() => setTouched(true)}
+            onBlur={() => value && setTouched(true)}
             placeholder="https://example.com"
             autoComplete="url"
             spellCheck={false}
             disabled={isLoading}
-            className={`flex-1 bg-transparent py-4 pr-4 text-base text-white placeholder-slate-600
-              font-mono outline-none disabled:opacity-50 transition-colors
-              ${showError ? "text-red-400" : ""}`}
+            className="flex-1 bg-transparent py-4 pr-3 text-base text-white
+              placeholder-slate-600 font-mono outline-none
+              disabled:opacity-50 transition-colors"
           />
 
-          {/* Clear button */}
+          {/* Clear × */}
           {value && !isLoading && (
             <button
               type="button"
-              onClick={() => { setValue(""); setTouched(false); }}
-              className="px-3 text-slate-600 hover:text-slate-400 transition-colors shrink-0"
-              aria-label="Clear input"
+              onClick={handleClear}
+              aria-label="Clear URL"
+              className="p-2 mr-1 text-slate-600 hover:text-slate-400
+                rounded-lg hover:bg-surface-600/50 transition-all duration-150 shrink-0"
             >
-              ✕
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth={2.5}>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
             </button>
           )}
 
-          {/* Submit button */}
+          {/* Submit */}
           <button
             id="audit-btn"
             type="submit"
             disabled={isLoading || !value.trim()}
-            className="btn-primary m-2 shrink-0 flex items-center gap-2 min-w-[110px] justify-center"
+            className="btn-primary m-2 shrink-0 flex items-center gap-2
+              min-w-[108px] justify-center text-sm"
           >
             {isLoading ? (
               <>
-                <Spinner />
-                Auditing…
+                <Spinner /> Auditing…
               </>
             ) : (
               <>
-                <span>Audit</span>
-                <span className="text-sm opacity-80">→</span>
+                Audit{" "}
+                <svg className="w-4 h-4 opacity-80" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth={2.5}>
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Validation error */}
+      {/* Error message */}
       {showError && (
-        <p className="mt-2 ml-1 text-sm text-red-400 animate-fade-in flex items-center gap-1.5">
-          <span>⚠</span> Please enter a valid URL starting with http:// or https://
+        <p role="alert" className="mt-2.5 ml-1 text-sm text-red-400 flex items-center gap-2 animate-fade-in">
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth={2}>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          Please enter a valid URL starting with <code className="font-mono bg-surface-700 px-1 rounded text-xs">http://</code> or <code className="font-mono bg-surface-700 px-1 rounded text-xs">https://</code>
         </p>
       )}
     </form>
@@ -104,14 +131,11 @@ export default function UrlInput({ onSubmit, isLoading }) {
 
 function Spinner() {
   return (
-    <svg
-      className="animate-spin h-4 w-4 text-white"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    <svg className="animate-spin w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10"
+        stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-80" fill="currentColor"
+        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
     </svg>
   );
 }
